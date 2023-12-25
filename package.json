@@ -1,0 +1,26 @@
+{
+  "name": "chat-server",
+  "version": "1.0.0",
+  "description": "A chat server",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon --exec ts-node src/index.ts",
+    "test:dev": "node --watch --test test/",
+    "test": "glob -c \"node --import tsx --no-warnings --test\" \"./tests/**/*.test.ts\""
+  },
+  "author": "BBlueCoder",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/busboy": "^1.5.3",
+    "@types/glob": "^8.1.0",
+    "glob": "^10.3.10",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "busboy": "^1.6.0"
+  }
+}
