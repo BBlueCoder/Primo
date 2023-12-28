@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --exec tsx src/index.ts",
-    "test": "glob -c \"tsx --no-warnings --test\" \"./tests/**/*.test.ts\""
+    "test": "glob -c \"tsx --no-warnings --test --test-reporter tap --test-reporter-destination report.txt\" \"./tests/**/*.test.ts\""
   },
   "author": "BBlueCoder",
   "license": "ISC",
