@@ -3,11 +3,9 @@
   "version": "1.0.0",
   "description": "A chat server",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "start": "nodemon --exec ts-node src/index.ts",
-    "test:dev": "node --watch --test test/",
-    "test": "glob -c \"node --import tsx --no-warnings --test\" \"./tests/**/*.test.ts\""
+    "start": "nodemon --exec tsx src/index.ts",
+    "test": "glob -c \"tsx --no-warnings --test\" \"./tests/**/*.test.ts\""
   },
   "author": "BBlueCoder",
   "license": "ISC",

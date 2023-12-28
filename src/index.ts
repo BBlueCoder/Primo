@@ -1,4 +1,36 @@
 import { MainServer } from "./main-server/main-server";
+import { AppInterceptor, Tuto } from "./main-server/tuto";
+
+
+const authInterceptor : AppInterceptor = {
+    intercept(next: Function): void {
+        console.log("auth intercepts");   
+        next();
+    }
+}
+
+const securityInterceptor : AppInterceptor = {
+    intercept(next : Function) : void {
+        console.log("security intercepts");
+        next();
+    }
+}
+
+const cacheInterceptor : AppInterceptor = {
+    intercept() : void {
+        console.log("app intercept");
+    }
+}
+
+const t = new Tuto();
+
+t
+    .paths("/pathname/*").addInterceptor(authInterceptor)
+    .paths("/pathname/*").addInterceptor(securityInterceptor)
+    .paths("/pathname/**").addInterceptor(cacheInterceptor)
+    .paths("/a").addInterceptor(authInterceptor)
+
+t.excute("/pathname/*");
 
 const server = new MainServer();
 
