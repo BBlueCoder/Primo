@@ -23,3 +23,9 @@ jobs:
 
       - name: Run Tests
         run: npm test
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: test_report
+          path: report.txt
