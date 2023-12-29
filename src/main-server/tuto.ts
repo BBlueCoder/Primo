@@ -44,7 +44,7 @@ class TutoBuilder {
     }
 }
 
-export interface AppInterceptor{
+interface AppInterceptor{
     intercept(next : Function) : void
 }
 

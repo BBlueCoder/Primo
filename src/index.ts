@@ -1,38 +1,27 @@
+import { CustomRequest } from "./main-server/custom-request";
+import { CustomResponse } from "./main-server/custom-response";
+import { AppInterceptor } from "./main-server/interceptors";
 import { MainServer } from "./main-server/main-server";
-import { AppInterceptor, Tuto } from "./main-server/tuto";
 
 
-const authInterceptor : AppInterceptor = {
-    intercept(next: Function): void {
-        console.log("auth intercepts");   
+const authInterceptor: AppInterceptor = {
+    intercept: function (req: CustomRequest, res: CustomResponse, next: () => void): void {
+        console.log("auth intercepts");
         next();
     }
 }
 
-const securityInterceptor : AppInterceptor = {
-    intercept(next : Function) : void {
-        console.log("security intercepts");
+const cacheInterceptor: AppInterceptor = {
+    intercept: function (req: CustomRequest, res: CustomResponse, next: () => void): void {
+        console.log("cach intercepts");
         next();
     }
 }
-
-const cacheInterceptor : AppInterceptor = {
-    intercept() : void {
-        console.log("app intercept");
-    }
-}
-
-const t = new Tuto();
-
-t
-    .paths("/pathname/*").addInterceptor(authInterceptor)
-    .paths("/pathname/*").addInterceptor(securityInterceptor)
-    .paths("/pathname/**").addInterceptor(cacheInterceptor)
-    .paths("/a").addInterceptor(authInterceptor)
-
-t.excute("/pathname/*");
 
 const server = new MainServer();
+server
+    .paths("/**").addInterceptor(authInterceptor);
+
 
 server.start(5500, () => {
     console.log("Server is running on port : 5500");
@@ -47,7 +36,6 @@ server.get('/file', (req, res) => {
 })
 
 server.get('/test/:id', (req, res) => {
-    console.log(req.queryParams.page);
     res.status(200).serve(req.body);
 })
 
@@ -66,11 +54,11 @@ server.get('/loop', (req, res) => {
 
 server.post('/upload', {
 
-    filename(filename: string, mimeType : string): string {
+    filename(filename: string, mimeType: string): string {
         return `file_${filename}`;
     },
 
-    destination(fieldName : string, filename : string, mimeType : string) : string {
+    destination(fieldName: string, filename: string, mimeType: string): string {
         return "./testStorage/";
     }
 
