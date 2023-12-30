@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: test endpoints methods
+    # Subtest: should return 404 when the endpoint is not found
+    not ok 1 - should return 404 when the endpoint is not found
+      ---
+      duration_ms: 14.3916
+      location: 'C:\\Users\\aball\\Documents\\Developement\\Web-App-projects\\chat-app\\tests\\integration\\main-server.test.ts:2:1160'
+      failureType: 'testCodeFailure'
+      error: 'fetch failed'
+      code: 'ERR_TEST_FAILURE'
+      name: 'TypeError'
+      stack: |-
+        Object.fetch (node:internal/deps/undici/undici:11730:11)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        TestContext.<anonymous> (c:\Users\aball\Documents\Developement\Web-App-projects\chat-app\tests\integration\main-server.test.ts:17:26)
+        async Test.run (node:internal/test_runner/test:632:9)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:948:7)
+        async startSubtest (node:internal/test_runner/harness:216:3)
+      ...
+    1..1
+not ok 1 - test endpoints methods
+  ---
+  duration_ms: 18.8049
+  type: 'suite'
+  location: 'C:\\Users\\aball\\Documents\\Developement\\Web-App-projects\\chat-app\\tests\\integration\\main-server.test.ts:2:990'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...

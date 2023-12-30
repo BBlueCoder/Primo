@@ -1,7 +1,6 @@
 import {
     describe,
-    it,
-    mock
+    it
 } from 'node:test';
 import assert from 'node:assert';
 import { PathUtils } from '../../src/main-server/path-utils';
