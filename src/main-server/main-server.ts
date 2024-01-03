@@ -1,3 +1,5 @@
+import { ServerResponse } from 'http';
+import { IncomingMessage } from 'http';
 import * as http from 'http';
 import { CustomRequest, ExtendedRequest, RequestOptions } from './custom-request';
 import { CustomResponse, ExtendedResponse } from './custom-response';
@@ -5,14 +7,14 @@ import { parse } from 'url';
 import { PathUtils } from './path-utils';
 import { parseJSONRequestBody,parseFormData} from './request-body-parsers';
 import { Route, RouteHandler } from './route';
-import { AppInterceptor } from './interceptors';
+import { AppInterceptor, Interceptor, InterceptorRequest, InterceptorResponse, NetworkInterceptor } from './interceptors';
 
 
 const JSON_CONTENT_TYPE = "application/json";
 
-export class MainServer {
+type LocalInterceptorType = Interceptor<InterceptorRequest,InterceptorResponse>[]
 
-    
+export class MainServer {
 
     private routes: {
         [route: string]: Route;
@@ -21,6 +23,7 @@ export class MainServer {
     private server: http.Server;
 
     private appInterceptors : Map<string,AppInterceptor[]> = new Map();
+    private networkInterceptors : Map<string, NetworkInterceptor[]> = new Map();
 
     constructor() {
         this.routes = {};
@@ -32,9 +35,12 @@ export class MainServer {
 
     private InterceptorBuilder = class {
 
-        constructor(private mainServer : MainServer, private interceptors : AppInterceptor[]) {}
+        constructor(
+            private mainServer : MainServer, 
+            private interceptors : LocalInterceptorType) 
+            {}
 
-        addInterceptor(...interceptors : AppInterceptor[]){
+        addInterceptor(...interceptors : LocalInterceptorType){
             this.interceptors.push(...interceptors);
             return this.mainServer;
         }
@@ -47,19 +53,20 @@ export class MainServer {
     }
 
     private executeInterceptorsRecursive(
-        req : CustomRequest, 
-        res : CustomResponse, 
+        req : CustomRequest | IncomingMessage, 
+        res : CustomResponse | ServerResponse, 
         path : string, 
         index : number,
+        interceptors : Map<string, LocalInterceptorType>,
         callback: () => void,
         ) {
 
-        const pattern = PathUtils.getPatternThatMatchesPath(this.appInterceptors.keys(),path);
+        const pattern = PathUtils.getPatternThatMatchesPath(interceptors.keys(),path);
         
-        const intps = this.appInterceptors.get(pattern);
+        const intps = interceptors.get(pattern);
         if(intps && index<intps!.length){
             intps![index].intercept(req,res,()=>{
-                this.executeInterceptorsRecursive(req,res,path,index + 1,callback);
+                this.executeInterceptorsRecursive(req,res,path,index + 1,interceptors,callback);
             })
         }else{
             callback();
@@ -195,6 +202,7 @@ export class MainServer {
                 res,
                 pathname,
                 0,
+                this.appInterceptors,
                 () => {
                     route.handler(req, res);
                 }
