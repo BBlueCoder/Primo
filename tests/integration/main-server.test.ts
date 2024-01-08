@@ -1,7 +1,6 @@
-import { describe, it , before, after} from 'node:test';
+import { describe, it , before,after} from 'node:test';
 import assert from 'node:assert';
 import { MainServer } from '../../src/main-server/main-server';
-import {promisify} from 'node:util';
 
 const PORT = 6001;
 const API_URL = `http://localhost:${PORT}/`;
@@ -17,8 +16,8 @@ describe('test endpoints methods',()=> {
         await server.startAsync(PORT);
     })
 
-    after(()=>{
-        server.close();
+    after(async ()=>{
+        await server.close();
     })
 
     it('should return 200 for successfull request',async ()=> {

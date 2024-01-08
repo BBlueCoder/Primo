@@ -1,18 +1,17 @@
-import { ServerResponse } from 'http';
-import { IncomingMessage } from 'http';
 import * as http from 'http';
 import { CustomRequest, ExtendedRequest, RequestOptions } from './custom-request';
 import { CustomResponse, ExtendedResponse } from './custom-response';
 import { parse } from 'url';
 import { PathUtils } from './path-utils';
-import { parseJSONRequestBody,parseFormData} from './request-body-parsers';
+import { parseJSONRequestBody, parseFormData } from './request-body-parsers';
 import { Route, RouteHandler } from './route';
 import { AppInterceptor, Interceptor, InterceptorRequest, InterceptorResponse, NetworkInterceptor } from './interceptors';
+import { executeInterceptorsRecursive } from './execute-interceptors';
 
 
 const JSON_CONTENT_TYPE = "application/json";
 
-type LocalInterceptorType = Interceptor<InterceptorRequest,InterceptorResponse>[]
+type LocalInterceptorType = Interceptor<InterceptorRequest, InterceptorResponse>[]
 
 export class MainServer {
 
@@ -22,75 +21,95 @@ export class MainServer {
 
     private server: http.Server;
 
-    private appInterceptors : Map<string,AppInterceptor[]> = new Map();
-    private networkInterceptors : Map<string, NetworkInterceptor[]> = new Map();
+    private appInterceptors: Map<string, AppInterceptor[]> = new Map();
+    private networkInterceptors: Map<string, NetworkInterceptor[]> = new Map();
 
     constructor() {
         this.routes = {};
-        
+
         this.server = http.createServer((req, res) => {
-            this.searchForRoute(req, res);
+            executeInterceptorsRecursive(
+                req,
+                res,
+                req.url!,
+                0,
+                this.networkInterceptors,
+                () => {
+                    this.searchForRoute(req, res);
+                }
+            )
         });
     }
 
     private InterceptorBuilder = class {
 
         constructor(
-            private mainServer : MainServer, 
-            private interceptors : LocalInterceptorType) 
-            {}
+            private mainServer: MainServer,
+            private appInterceptors: AppInterceptor[],
+            private networkInterceptors: NetworkInterceptor[]
+        ) { }
 
-        addInterceptor(...interceptors : LocalInterceptorType){
-            this.interceptors.push(...interceptors);
+        addInterceptors(...interceptors: AppInterceptor[]) {
+            this.appInterceptors.push(...interceptors);
+            this.mainServer.removeEmptyPatterns()
+            return this.mainServer;
+        }
+
+        addNetworkInterceptors(...interceptors: NetworkInterceptor[]) {
+            this.networkInterceptors.push(...interceptors);
+            this.mainServer.removeEmptyPatterns()
             return this.mainServer;
         }
     }
-    
-    paths(pattern : string) {
-        if(!this.appInterceptors.get(pattern))
-            this.appInterceptors.set(pattern,[]);
-        return new this.InterceptorBuilder(this,this.appInterceptors.get(pattern) || [])
+
+    paths(pattern: string) {
+        if (!this.appInterceptors.get(pattern))
+            this.appInterceptors.set(pattern, []);
+
+        if (!this.networkInterceptors.get(pattern))
+            this.networkInterceptors.set(pattern, []);
+
+        return new this.InterceptorBuilder(
+            this,
+            this.appInterceptors.get(pattern) || [],
+            this.networkInterceptors.get(pattern) || []
+        )
     }
 
-    private executeInterceptorsRecursive(
-        req : CustomRequest | IncomingMessage, 
-        res : CustomResponse | ServerResponse, 
-        path : string, 
-        index : number,
-        interceptors : Map<string, LocalInterceptorType>,
-        callback: () => void,
-        ) {
+    private removeEmptyPatterns() {
+        for(let p of this.appInterceptors.keys()){
+            if(this.appInterceptors.get(p)?.length == 0)
+                this.appInterceptors.delete(p)
+        }
 
-        const pattern = PathUtils.getPatternThatMatchesPath(interceptors.keys(),path);
-        
-        const intps = interceptors.get(pattern);
-        if(intps && index<intps!.length){
-            intps![index].intercept(req,res,()=>{
-                this.executeInterceptorsRecursive(req,res,path,index + 1,interceptors,callback);
-            })
-        }else{
-            callback();
+        for(let p of this.networkInterceptors.keys()){
+            if(this.networkInterceptors.get(p)?.length == 0)
+                this.networkInterceptors.delete(p)
         }
     }
-    
+
     start(port: number, callback: (() => void | undefined)): void {
         this.server.listen(port, () => {
             callback();
         })
     }
 
-    startAsync(port : number) : Promise<void> {
-        return new Promise((resolve,reject)=>{
+    startAsync(port: number): Promise<void> {
+        return new Promise((resolve, reject) => {
             this.server.listen(port, () => {
                 resolve();
             })
         })
     }
 
-    close() {
-        this.server.close();
+    close(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.server.close((err) => {
+                resolve();
+            })
+        })
     }
-    
+
     httpMethod(
         method: string,
         path: string,
@@ -179,9 +198,6 @@ export class MainServer {
         pathname: string,
         query: object
     ): void {
-
-        console.log(pathname);
-
         const paramValues = PathUtils.extractParamsFromUrlPath(pathRegex, pathname);
         let i = 0;
         route.params?.forEach(p => {
@@ -197,7 +213,8 @@ export class MainServer {
             req.requestOpts = requestOpts;
 
         this.parseRequestBody(req, () => {
-            this.executeInterceptorsRecursive(
+            
+            executeInterceptorsRecursive(
                 req,
                 res,
                 pathname,
@@ -215,7 +232,7 @@ export class MainServer {
             parseJSONRequestBody(req, callback);
         else if (req.request.headers['content-type']?.includes("multipart/form-data"))
             parseFormData(req, callback)
-        else 
+        else
             callback();
     }
 
