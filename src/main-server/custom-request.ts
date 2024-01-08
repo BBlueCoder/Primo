@@ -1,6 +1,11 @@
 import * as http from 'http';
 import {EventEmitter} from 'events';
-import { RequestOptions } from './main-server';
+
+
+export interface RequestOptions {
+    destination?: (fieldName: string, filename: string, mimeType: string) => string;
+    filename?: (filename: string, mimeType: string) => string;
+}
 
 export interface FileMetadata {
     filename : string,

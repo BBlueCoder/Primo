@@ -64,4 +64,47 @@ export class PathUtils {
         return queryParams;
     }
 
+    public static isPathMatchToPattern(pattern : string, path : string) : boolean {
+        const patternArrays = pattern.split('/').filter(e => e);
+        const pathArrays = path.split('/').filter(e => e);
+
+        const lastIndex = patternArrays.length - 1;
+
+        if(patternArrays[lastIndex] == "*"){
+            for(let i = 0; i < pathArrays.length ; i++){
+                if(i>=patternArrays.length)
+                    return false;
+                if(patternArrays[i] != "*" && patternArrays[i] != pathArrays[i])
+                    return false;
+            }
+        }else if(patternArrays[lastIndex] == "**"){
+            for(let i = 0; i< pathArrays.length ; i++){
+                if(patternArrays[i] == "**")
+                    break;
+
+                if(patternArrays[i] != pathArrays[i])
+                    return false;
+            }
+        }else {
+            if(pathArrays.length != patternArrays.length)
+                return false;
+
+            for(let i = 0; i<patternArrays.length;i++){
+                if(patternArrays[i] != pathArrays[i])
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static getPatternThatMatchesPath(patterns : IterableIterator<string> , path : string) : string {
+        for(let p of patterns){
+            if(this.isPathMatchToPattern(p,path))
+                return p;
+        }
+
+        return "";
+    }
+
 }

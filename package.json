@@ -5,11 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --exec tsx src/index.ts",
+    "compile:test": "tsc && node --test --experimental-test-coverage",
+    "test:dev": "glob -c \"tsx --test\" \"./tests/**/*.test.ts\"",
     "test": "glob -c \"tsx --no-warnings --test --test-reporter tap --test-reporter-destination report.txt\" \"./tests/**/*.test.ts\""
   },
   "author": "BBlueCoder",
   "license": "ISC",
   "devDependencies": {
+    "@tsconfig/node20": "^20.1.2",
     "@types/busboy": "^1.5.3",
     "@types/glob": "^8.1.0",
     "glob": "^10.3.10",

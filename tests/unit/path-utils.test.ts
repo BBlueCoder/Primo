@@ -1,7 +1,6 @@
 import {
     describe,
-    it,
-    mock
+    it
 } from 'node:test';
 import assert from 'node:assert';
 import { PathUtils } from '../../src/main-server/path-utils';
@@ -59,6 +58,26 @@ describe('path utils', () => {
             assert.strictEqual(queryParams.page,5);
             assert.strictEqual(queryParams.size,25);
             assert.strictEqual(queryParams.sort,"asc");
+        })
+    })
+
+    describe('isPathMatchToPattern',()=> {
+        it('should return true when path matches with pattern',()=> {
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname","/pathname/"),true);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/","/pathname"),true);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/*","/pathname"),true);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/*","/pathname/5"),true);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/*","/pathname/5?page=1&size=20"),true);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/**","/pathname"),true);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/**","/pathname/5"),true);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/**","/pathname/5/asc?limit=25"),true);
+        })
+
+        it('should return false when path do not match with pattern',()=> {
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/*","/invalid"),false);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname","/pathname/5"),false);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/*","/pathname/5/10"),false);
+            assert.strictEqual(PathUtils.isPathMatchToPattern("/pathname/**","/invalid/5/10"),false);
         })
     })
 })
