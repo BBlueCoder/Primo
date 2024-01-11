@@ -31,7 +31,7 @@ jobs:
                   path: test-report.txt
 
             - name: Run ESlint
-              uses: npm run ci:lint || exit 0
+              run: npm run ci:lint || exit 0
 
             - name: Upload lint report
               uses: actions/upload-artifact@v3.1.2
