@@ -1,8 +1,7 @@
-import { ServerResponse,IncomingMessage } from 'http';
+import { ServerResponse, IncomingMessage } from 'http'
 
-class Handler{
-    constructor(req : IncomingMessage, res : ServerResponse){}
+class Handler {
+    constructor(req: IncomingMessage, res: ServerResponse) {}
 
-
-    
+    ask() {}
 }

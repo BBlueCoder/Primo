@@ -1,32 +1,43 @@
-import { IncomingMessage, ServerResponse } from "http";
-import { CustomRequest } from "./main-server/custom-request";
-import { CustomResponse } from "./main-server/custom-response";
-import { AppInterceptor, NetworkInterceptor } from "./main-server/interceptors";
-import { MainServer } from "./main-server/main-server";
-
+import { IncomingMessage, ServerResponse } from 'http'
+import { CustomRequest } from './main-server/custom-request'
+import { CustomResponse } from './main-server/custom-response'
+import { AppInterceptor, NetworkInterceptor } from './main-server/interceptors'
+import { Primo } from './main-server/primo'
 
 const authInterceptor: AppInterceptor = {
-    intercept: function (req: CustomRequest, res: CustomResponse, next: () => void): void {
-        console.log("auth intercepts");
-        next();
-    }
+    intercept: function (
+        req: CustomRequest,
+        res: CustomResponse,
+        next: () => void
+    ): void {
+        console.log('auth intercepts')
+        next()
+    },
 }
 
 const cacheInterceptor: AppInterceptor = {
-    intercept: function (req: CustomRequest, res: CustomResponse, next: () => void): void {
-        console.log("cach intercepts");
-        next();
-    }
+    intercept: function (
+        req: CustomRequest,
+        res: CustomResponse,
+        next: () => void
+    ): void {
+        console.log('cach intercepts')
+        next()
+    },
 }
 
 const netInterceptor: NetworkInterceptor = {
-    intercept: function (req: IncomingMessage, res: ServerResponse<IncomingMessage>, next: () => void): void {
-        console.log("net intercepts");
-        next();
-    }
+    intercept: function (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: () => void
+    ): void {
+        console.log('net intercepts')
+        next()
+    },
 }
 
-const server = new MainServer();
+const server = new Primo()
 // server
 // .paths("/test/**").addNetworkInterceptors(netInterceptor)
 //     .paths("/**").addInterceptors(authInterceptor, cacheInterceptor)
@@ -37,54 +48,47 @@ const server = new MainServer();
 //         },
 //     })
 
-
 server.start(5500, () => {
-    console.log("Server is running on port : 5500");
+    console.log('Server is running on port : 5500')
 })
 
-server.get("/test", (req, res) => {
-    res.status(200).serve(req.body);
+server.get('/test', (req, res) => {
+    res.status(200).serve(req.body)
 })
 
 server.get('/file', (req, res) => {
-    res.status(200).serveStaticFile('./file.html');
+    res.status(200).serveStaticFile('./file.html')
 })
 
 server.get('/test/:id', (req, res) => {
-    res.status(200).serve(req.body);
+    res.status(200).serve(req.body)
 })
 
 server.get('/test/:id/:p', (req, res) => {
-    console.log(req.params.id);
-    res.status(200).serve(req.body);
+    console.log(req.params.id)
+    res.status(200).serve(req.body)
 })
 
-server.get('/loop', (req, res) => {
-    let a = 5;
-    let b = 10;
-    while (true) {
-        a = a + a * b * 100 * 9999999;
-    }
-})
+server.post(
+    '/upload',
+    {
+        filename(filename: string, mimeType: string): string {
+            return `${Date.now()}_file_${filename}`
+        },
 
-server.post('/upload', {
-
-    filename(filename: string, mimeType: string): string {
-        return `${Date.now()}_file_${filename}`;
+        destination(
+            fieldName: string,
+            filename: string,
+            mimeType: string
+        ): string {
+            return './storage/'
+        },
     },
-
-    destination(fieldName: string, filename: string, mimeType: string): string {
-        return "./storage/";
+    (req, res) => {
+        console.log(req.files)
+        const response = { data: 'success' }
+        res.status(200).serve(response)
     }
+)
 
-}, (req, res) => {
-    console.log(req.files);
-    const response = {data : "success"}
-    res.status(200).serve(response);
-})
-
-
-
-// server.post('path',opts,(req,res)=> {
-
-// })
+server.post('path', (req, res) => {})
