@@ -133,8 +133,8 @@ export class Primo extends MainServer {
 
         return new this.InterceptorBuilder(
             this,
-            this.appInterceptors.get(pattern)!!,
-            this.networkInterceptors.get(pattern)!!
+            this.appInterceptors.get(pattern)!,
+            this.networkInterceptors.get(pattern)!
         )
     }
 
@@ -143,7 +143,7 @@ export class Primo extends MainServer {
      */
     private removeEmptyPatterns() {
         for (const p of this.appInterceptors.keys()) {
-            if (this.appInterceptors.get(p)!!.interceptors.length == 0)
+            if (this.appInterceptors.get(p)!.interceptors.length == 0)
                 this.appInterceptors.delete(p)
         }
 
