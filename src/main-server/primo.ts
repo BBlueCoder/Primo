@@ -1,5 +1,9 @@
 import { RequestOptions } from './custom-request'
-import { AppInterceptor, NetworkInterceptor } from './interceptors'
+import {
+    AppInterceptor,
+    InterceptorConfig,
+    NetworkInterceptor,
+} from './interceptors'
 import { MainServer } from './main-server'
 import { RouteHandler } from './route'
 
@@ -18,9 +22,15 @@ export class Primo extends MainServer {
          */
         constructor(
             private primo: Primo,
-            private appInterceptors: AppInterceptor[],
-            private networkInterceptors: NetworkInterceptor[]
+            private appInterceptors: InterceptorConfig<AppInterceptor>,
+            private networkInterceptors: InterceptorConfig<NetworkInterceptor>
         ) {}
+
+        methods(methods: string[]) {
+            this.appInterceptors.methods = methods
+            this.networkInterceptors.methods = methods
+            return this
+        }
 
         /**
          * Adds application interceptors to the list for a specified path.
@@ -44,7 +54,7 @@ export class Primo extends MainServer {
          * ````
          */
         addInterceptors(...interceptors: AppInterceptor[]) {
-            this.appInterceptors.push(...interceptors)
+            this.appInterceptors.interceptors.push(...interceptors)
             this.primo.removeEmptyPatterns()
             return this.primo
         }
@@ -72,7 +82,7 @@ export class Primo extends MainServer {
          * ````
          */
         addNetworkInterceptors(...interceptors: NetworkInterceptor[]) {
-            this.networkInterceptors.push(...interceptors)
+            this.networkInterceptors.interceptors.push(...interceptors)
             this.primo.removeEmptyPatterns()
             return this.primo
         }
@@ -110,15 +120,21 @@ export class Primo extends MainServer {
      */
     paths(pattern: string) {
         if (!this.appInterceptors.get(pattern))
-            this.appInterceptors.set(pattern, [])
+            this.appInterceptors.set(pattern, {
+                interceptors: [],
+                methods: [],
+            })
 
         if (!this.networkInterceptors.get(pattern))
-            this.networkInterceptors.set(pattern, [])
+            this.networkInterceptors.set(pattern, {
+                interceptors: [],
+                methods: [],
+            })
 
         return new this.InterceptorBuilder(
             this,
-            this.appInterceptors.get(pattern) || [],
-            this.networkInterceptors.get(pattern) || []
+            this.appInterceptors.get(pattern)!!,
+            this.networkInterceptors.get(pattern)!!
         )
     }
 
@@ -127,12 +143,12 @@ export class Primo extends MainServer {
      */
     private removeEmptyPatterns() {
         for (const p of this.appInterceptors.keys()) {
-            if (this.appInterceptors.get(p)?.length == 0)
+            if (this.appInterceptors.get(p)!!.interceptors.length == 0)
                 this.appInterceptors.delete(p)
         }
 
         for (const p of this.networkInterceptors.keys()) {
-            if (this.networkInterceptors.get(p)?.length == 0)
+            if (this.networkInterceptors.get(p)?.interceptors.length == 0)
                 this.networkInterceptors.delete(p)
         }
     }

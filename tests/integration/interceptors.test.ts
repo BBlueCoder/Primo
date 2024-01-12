@@ -138,7 +138,7 @@ describe('interceptors integration with server', async () => {
         assert.strictEqual(response.status, 200)
     })
 
-    it('should call app interceptor for  specified path', async () => {
+    it('should call app interceptor for specified path', async () => {
         const rateLimitInterceptor: NetworkInterceptor = {
             intercept: function (
                 req: IncomingMessage,
@@ -246,5 +246,39 @@ describe('interceptors integration with server', async () => {
 
         assert.deepStrictEqual(result, User)
         assert.strictEqual(response.status, 200)
+    })
+
+    it('should call interceptors only for specified methods', async () => {
+        const authInterceptor: AppInterceptor = {
+            intercept: function (
+                req: CustomRequest,
+                res: CustomResponse,
+                next: () => void
+            ): void {
+                res.status(401).serve('')
+            },
+        }
+
+        server.paths('/post').methods(['post']).addInterceptors(authInterceptor)
+
+        const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
+
+        server.get('/post', (req, res) => {
+            res.status(200).serve('')
+        })
+
+        server.post('/post', (req, res) => {
+            res.status(200).serve('')
+        })
+
+        const responseOfGet = await fetch(`${API_URL}post`)
+
+        assert.strictEqual(responseOfGet.status, 200)
+        assert.deepStrictEqual(mAuthInterceptor.mock.callCount(), 0)
+
+        const responseOfPost = await fetch(`${API_URL}post`, { method: 'POST' })
+
+        assert.strictEqual(responseOfPost.status, 401)
+        assert.deepStrictEqual(mAuthInterceptor.mock.callCount(), 1)
     })
 })

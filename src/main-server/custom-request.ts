@@ -40,6 +40,8 @@ export interface CustomRequest {
     queryParams: {
         [name: string]: string
     }
+
+    get method(): string
 }
 
 export class ExtendedRequest extends EventEmitter implements CustomRequest {
@@ -62,5 +64,10 @@ export class ExtendedRequest extends EventEmitter implements CustomRequest {
     constructor(req: http.IncomingMessage) {
         super()
         this.request = req
+        this.method
+    }
+
+    get method(): string {
+        return this.request.method!
     }
 }

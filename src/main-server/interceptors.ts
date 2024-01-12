@@ -5,6 +5,13 @@ import { CustomResponse } from './custom-response'
 export type InterceptorRequest = CustomRequest | IncomingMessage
 export type InterceptorResponse = CustomResponse | ServerResponse
 
+export interface InterceptorConfig<
+    T extends Interceptor<InterceptorRequest, InterceptorResponse>,
+> {
+    interceptors: T[]
+    methods: string[]
+}
+
 /**
  * Defines the structure of an interceptor, which can be used to run code for endpoints.
  * Interceptors implement this interface by providing a specific type for the request (T),

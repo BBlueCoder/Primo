@@ -9,7 +9,11 @@ import { parse } from 'url'
 import { PathUtils } from './path-utils'
 import { parseJSONRequestBody, parseFormData } from './request-body-parsers'
 import { Route, RouteHandler } from './route'
-import { AppInterceptor, NetworkInterceptor } from './interceptors'
+import {
+    AppInterceptor,
+    InterceptorConfig,
+    NetworkInterceptor,
+} from './interceptors'
 import { executeInterceptorsRecursive } from './execute-interceptors'
 
 const JSON_CONTENT_TYPE = 'application/json'
@@ -21,8 +25,12 @@ export class MainServer {
 
     private server: http.Server
 
-    protected appInterceptors: Map<string, AppInterceptor[]> = new Map()
-    protected networkInterceptors: Map<string, NetworkInterceptor[]> = new Map()
+    protected appInterceptors: Map<string, InterceptorConfig<AppInterceptor>> =
+        new Map()
+    protected networkInterceptors: Map<
+        string,
+        InterceptorConfig<NetworkInterceptor>
+    > = new Map()
 
     constructor() {
         this.routes = {}

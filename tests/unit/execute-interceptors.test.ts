@@ -1,9 +1,12 @@
+import { CustomRequest } from './../../src/main-server/custom-request'
 import { IncomingMessage, ServerResponse } from 'http'
 import { describe, it, mock, beforeEach } from 'node:test'
 import assert from 'node:assert'
-import { CustomRequest } from '../../src/main-server/custom-request'
 import { CustomResponse } from '../../src/main-server/custom-response'
-import { AppInterceptor } from '../../src/main-server/interceptors'
+import {
+    AppInterceptor,
+    InterceptorConfig,
+} from '../../src/main-server/interceptors'
 import { executeInterceptorsRecursive } from '../../src/main-server/execute-interceptors'
 
 describe('executeInterceptorsRecursive()', () => {
@@ -13,6 +16,7 @@ describe('executeInterceptorsRecursive()', () => {
         files: {},
         params: {},
         queryParams: {},
+        method: 'GET',
     }
 
     const mockCustomResponse: CustomResponse = {
@@ -24,7 +28,10 @@ describe('executeInterceptorsRecursive()', () => {
         serve: function (response: any): void {},
     }
 
-    const appInterceptors: Map<string, AppInterceptor[]> = new Map()
+    const appInterceptors: Map<
+        string,
+        InterceptorConfig<AppInterceptor>
+    > = new Map()
 
     const authInterceptor: AppInterceptor = {
         intercept: function (
@@ -50,12 +57,20 @@ describe('executeInterceptorsRecursive()', () => {
         mock.restoreAll()
 
         appInterceptors.clear()
+
+        appInterceptors.set('/path/**', {
+            interceptors: [authInterceptor],
+            methods: [],
+        })
+
+        appInterceptors.set('/**', {
+            interceptors: [cachInterceptor],
+            methods: [],
+        })
     })
 
     it('should call intercept function', () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
-
-        appInterceptors.set('/path/**', [authInterceptor])
 
         executeInterceptorsRecursive(
             mockCustomRequest,
@@ -71,8 +86,6 @@ describe('executeInterceptorsRecursive()', () => {
 
     it('should call callback', () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
-
-        appInterceptors.set('/path/**', [authInterceptor])
 
         const spy = mock.fn()
 
@@ -110,7 +123,10 @@ describe('executeInterceptorsRecursive()', () => {
             }
         )
 
-        appInterceptors.set('/path/**', [authInterceptor, cachInterceptor])
+        appInterceptors.set('/path/**', {
+            interceptors: [authInterceptor, cachInterceptor],
+            methods: [],
+        })
 
         executeInterceptorsRecursive(
             mockCustomRequest,
@@ -133,7 +149,10 @@ describe('executeInterceptorsRecursive()', () => {
         )
         const mCachInterceptor = mock.method(cachInterceptor, 'intercept')
 
-        appInterceptors.set('/path/**', [authInterceptor, cachInterceptor])
+        appInterceptors.set('/path/**', {
+            interceptors: [authInterceptor, cachInterceptor],
+            methods: [],
+        })
 
         executeInterceptorsRecursive(
             mockCustomRequest,
@@ -152,19 +171,16 @@ describe('executeInterceptorsRecursive()', () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
         const mCachInterceptor = mock.method(cachInterceptor, 'intercept')
 
-        /**
-         * (**) means expand the path fully. ex : /path/** => [/path, /path/5, /path/5/asc, ...] all these paths match with the pattern
-         * (*) means expand the path once. ex : /path/* => [/path, /path/5, path/second]
-         * in the next case only the cacheInterceptor should run
-         * the API run only the first pattern it found that matches with the path
-         * And because /** means any path
-         * the API won't reach /path/**
-         * the order of adding the interceptors matters
-         * always start with the most specified pattern like in the next test
-         */
+        appInterceptors.clear()
 
-        appInterceptors.set('/**', [cachInterceptor])
-        appInterceptors.set('/path/**', [authInterceptor])
+        appInterceptors.set('/**', {
+            interceptors: [cachInterceptor],
+            methods: [],
+        })
+        appInterceptors.set('/path/**', {
+            interceptors: [authInterceptor],
+            methods: [],
+        })
 
         executeInterceptorsRecursive(
             mockCustomRequest,
@@ -182,9 +198,6 @@ describe('executeInterceptorsRecursive()', () => {
     it('should call only the first matched pattern', () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
         const mCachInterceptor = mock.method(cachInterceptor, 'intercept')
-
-        appInterceptors.set('/path/**', [authInterceptor])
-        appInterceptors.set('/**', [cachInterceptor])
 
         executeInterceptorsRecursive(
             mockCustomRequest,
@@ -210,8 +223,6 @@ describe('executeInterceptorsRecursive()', () => {
 
         const mServe = mock.method(mockCustomResponse, 'serve', () => {})
 
-        appInterceptors.set('/path/**', [authInterceptor])
-
         executeInterceptorsRecursive(
             mockCustomRequest,
             mockCustomResponse,
@@ -224,5 +235,40 @@ describe('executeInterceptorsRecursive()', () => {
         assert.deepStrictEqual(mAuthInterceptor.mock.callCount(), 1)
         assert.deepStrictEqual(mServe.mock.callCount(), 1)
         assert.deepStrictEqual(mServe.mock.calls[0].arguments[0], 'data')
+    })
+
+    it('should call interceptors only for specified methods', () => {
+        const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
+
+        appInterceptors.clear()
+
+        appInterceptors.set('/path', {
+            interceptors: [authInterceptor],
+            methods: ['post'],
+        })
+
+        executeInterceptorsRecursive(
+            mockCustomRequest,
+            mockCustomResponse,
+            '/path',
+            0,
+            appInterceptors,
+            () => {}
+        )
+
+        assert.deepStrictEqual(mAuthInterceptor.mock.callCount(), 0)
+
+        executeInterceptorsRecursive(
+            {
+                method: 'POST',
+            } as CustomRequest,
+            mockCustomResponse,
+            '/path',
+            0,
+            appInterceptors,
+            () => {}
+        )
+
+        assert.deepStrictEqual(mAuthInterceptor.mock.callCount(), 1)
     })
 })
