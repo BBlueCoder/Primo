@@ -2,12 +2,10 @@ import { CustomRequest } from './custom-request'
 import { CustomResponse } from './custom-response'
 import { ServerResponse, IncomingMessage } from 'http'
 import {
-    AppInterceptor,
     Interceptor,
     InterceptorConfig,
     InterceptorRequest,
     InterceptorResponse,
-    NetworkInterceptor,
 } from './interceptors'
 import { PathUtils } from './path-utils'
 
@@ -33,7 +31,7 @@ export function executeInterceptorsRecursive(
         isThereAnyInterceptros(intps, index) &&
         isMethodMatchesWithInterceptorsMethods(
             req.method as string,
-            intps?.methods!
+            intps!.methods
         )
     ) {
         intps!.interceptors[index].intercept(req, res, () => {
@@ -58,14 +56,14 @@ function isThereAnyInterceptros(
           >
         | undefined,
     index: number
-): Boolean {
+): boolean {
     return intps != undefined && index < intps.interceptors.length
 }
 
 function isMethodMatchesWithInterceptorsMethods(
     method: string,
     methods: string[]
-): Boolean {
+): boolean {
     if (methods.length == 0) return true
 
     return (
