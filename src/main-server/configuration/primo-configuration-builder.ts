@@ -44,61 +44,36 @@ export class PrimoConfiguration {
      * @returns An instance of the InterceptorBuilder with the specified pattern.
      */
     paths(pattern: string) {
-        if (!this.appInterceptors.get(pattern))
-            this.appInterceptors.set(pattern, {
-                interceptors: [],
-                methods: [],
-            })
-
-        if (!this.networkInterceptors.get(pattern))
-            this.networkInterceptors.set(pattern, {
-                interceptors: [],
-                methods: [],
-            })
-
         return new InterceptorBuilder(
             this,
-            this.appInterceptors.get(pattern)!,
-            this.networkInterceptors.get(pattern)!,
-            () => {
-                this.removeEmptyPatterns()
-            }
+            this.appInterceptors,
+            this.networkInterceptors,
+            pattern
         )
-    }
-
-    /**
-     * Removes patterns with empty interceptor lists from both appInterceptors and networkInterceptors.
-     */
-    private removeEmptyPatterns() {
-        for (const p of this.appInterceptors.keys()) {
-            if (this.appInterceptors.get(p)!.interceptors.length == 0)
-                this.appInterceptors.delete(p)
-        }
-
-        for (const p of this.networkInterceptors.keys()) {
-            if (this.networkInterceptors.get(p)?.interceptors.length == 0)
-                this.networkInterceptors.delete(p)
-        }
     }
 }
 
 class InterceptorBuilder {
     /**
      * Constructor for InterceptorBuilder.
-     * @param primo - The Primo instance associated with the builder.
+     * @param primoConfiguration - The Primo instance associated with the builder.
      * @param appInterceptors - List of application interceptors.
      * @param networkInterceptors - List of network interceptors.
      */
     constructor(
-        private primo: PrimoConfiguration,
-        private appInterceptors: InterceptorConfig<AppInterceptor>,
-        private networkInterceptors: InterceptorConfig<NetworkInterceptor>,
-        private removeEmptyPatterns: () => void
+        private primoConfiguration: PrimoConfiguration,
+        private appInterceptors: Map<string, InterceptorConfig<AppInterceptor>>,
+        private networkInterceptors: Map<
+            string,
+            InterceptorConfig<NetworkInterceptor>
+        >,
+        private pattern: string
     ) {}
 
+    private _methods: string[] = []
+
     methods(methods: string[]) {
-        this.appInterceptors.methods = methods
-        this.networkInterceptors.methods = methods
+        this._methods = methods
         return this
     }
 
@@ -124,9 +99,19 @@ class InterceptorBuilder {
      * ````
      */
     addInterceptors(...interceptors: AppInterceptor[]) {
-        this.appInterceptors.interceptors.push(...interceptors)
-        this.removeEmptyPatterns()
-        return this.primo
+        if (!this.appInterceptors.get(this.pattern))
+            this.appInterceptors.set(this.pattern, {
+                interceptors: [],
+                methods: [],
+            })
+
+        this.appInterceptors
+            .get(this.pattern)!
+            .interceptors.push(...interceptors)
+
+        this.appInterceptors.get(this.pattern)!.methods.push(...this._methods)
+
+        return this.primoConfiguration
     }
 
     /**
@@ -152,9 +137,20 @@ class InterceptorBuilder {
      * ````
      */
     addNetworkInterceptors(...interceptors: NetworkInterceptor[]) {
-        this.networkInterceptors.interceptors.push(...interceptors)
-        this.removeEmptyPatterns()
-        return this.primo
+        if (!this.networkInterceptors.get(this.pattern))
+            this.networkInterceptors.set(this.pattern, {
+                interceptors: [],
+                methods: [],
+            })
+
+        this.networkInterceptors
+            .get(this.pattern)!
+            .interceptors.push(...interceptors)
+        this.networkInterceptors
+            .get(this.pattern)!
+            .methods.push(...this._methods)
+
+        return this.primoConfiguration
     }
 }
 

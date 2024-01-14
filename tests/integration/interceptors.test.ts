@@ -254,7 +254,7 @@ describe('interceptors integration with server', async () => {
         assert.strictEqual(response.status, 200)
     })
 
-    it('should call interceptors only for specified methods', async () => {
+    it('should call interceptors only for specified methods in App Interceptros', async () => {
         const authInterceptor: AppInterceptor = {
             intercept: function (
                 req: CustomRequest,
