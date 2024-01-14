@@ -45,7 +45,10 @@ describe('interceptors integration with server', async () => {
             'intercept'
         )
 
-        server.paths('/path/**').addNetworkInterceptors(rateLimitInterceptor)
+        server
+            .configure()
+            .paths('/path/**')
+            .addNetworkInterceptors(rateLimitInterceptor)
 
         const response = await fetch(`${API_URL}path`)
 
@@ -66,7 +69,7 @@ describe('interceptors integration with server', async () => {
 
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
-        server.paths('/path/**').addInterceptors(authInterceptor)
+        server.configure().paths('/path/**').addInterceptors(authInterceptor)
 
         const response = await fetch(`${API_URL}path`)
 
@@ -90,7 +93,7 @@ describe('interceptors integration with server', async () => {
 
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
-        server.paths('/path/**').addInterceptors(authInterceptor)
+        server.configure().paths('/path/**').addInterceptors(authInterceptor)
 
         const response = await fetch(`${API_URL}path`)
 
@@ -126,6 +129,7 @@ describe('interceptors integration with server', async () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
         server
+            .configure()
             .paths('/path/**')
             .addNetworkInterceptors(rateLimitInterceptor)
             .paths('/path/**')
@@ -166,6 +170,7 @@ describe('interceptors integration with server', async () => {
 
         // for better practices don't add paths in this order
         server
+            .configure()
             .paths('/**')
             .addNetworkInterceptors(rateLimitInterceptor)
             .paths('/path')
@@ -205,6 +210,7 @@ describe('interceptors integration with server', async () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
         server
+            .configure()
             .paths('/other')
             .addNetworkInterceptors(rateLimitInterceptor)
             .paths('/other')
@@ -238,7 +244,7 @@ describe('interceptors integration with server', async () => {
             res.status(200).serve(req.user)
         })
 
-        server.paths('/user').addInterceptors(authInterceptor)
+        server.configure().paths('/user').addInterceptors(authInterceptor)
 
         const response = await fetch(`${API_URL}user`)
 
@@ -259,7 +265,11 @@ describe('interceptors integration with server', async () => {
             },
         }
 
-        server.paths('/post').methods(['post']).addInterceptors(authInterceptor)
+        server
+            .configure()
+            .paths('/post')
+            .methods(['post'])
+            .addInterceptors(authInterceptor)
 
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
