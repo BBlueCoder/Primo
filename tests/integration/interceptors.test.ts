@@ -13,7 +13,7 @@ const PORT = 6002
 const API_URL = `http://localhost:${PORT}/`
 
 describe('interceptors integration with server', async () => {
-    let server = new Primo()
+    let server
 
     beforeEach(async () => {
         server = new Primo()
@@ -254,7 +254,7 @@ describe('interceptors integration with server', async () => {
         assert.strictEqual(response.status, 200)
     })
 
-    it('should call interceptors only for specified methods in App Interceptros', async () => {
+    it('should call interceptors only for specified methods', async () => {
         const authInterceptor: AppInterceptor = {
             intercept: function (
                 req: CustomRequest,
@@ -265,11 +265,25 @@ describe('interceptors integration with server', async () => {
             },
         }
 
+        const rateLimitInterceptor: NetworkInterceptor = {
+            intercept: function (
+                req: IncomingMessage,
+                res: ServerResponse<IncomingMessage>,
+                next: () => void
+            ): void {
+                res.statusCode = 429
+                res.end()
+            },
+        }
+
         server
             .configure()
             .paths('/post')
             .methods(['post'])
             .addInterceptors(authInterceptor)
+            .paths('/articles')
+            .methods(['post'])
+            .addNetworkInterceptors(rateLimitInterceptor)
 
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
@@ -290,5 +304,30 @@ describe('interceptors integration with server', async () => {
 
         assert.strictEqual(responseOfPost.status, 401)
         assert.deepStrictEqual(mAuthInterceptor.mock.callCount(), 1)
+
+        const mRateLimitInterceptor = mock.method(
+            rateLimitInterceptor,
+            'intercept'
+        )
+
+        server.get('/articles', (req, res) => {
+            res.status(200).serve('')
+        })
+
+        server.post('/articles', (req, res) => {
+            res.status(200).serve('')
+        })
+
+        const responseOfGetNetowrk = await fetch(`${API_URL}articles`)
+
+        assert.strictEqual(responseOfGetNetowrk.status, 200)
+        assert.deepStrictEqual(mRateLimitInterceptor.mock.callCount(), 0)
+
+        const responseOfPostNetowrk = await fetch(`${API_URL}articles`, {
+            method: 'POST',
+        })
+
+        assert.strictEqual(responseOfPostNetowrk.status, 429)
+        assert.deepStrictEqual(mRateLimitInterceptor.mock.callCount(), 1)
     })
 })

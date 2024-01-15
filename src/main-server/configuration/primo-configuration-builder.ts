@@ -1,6 +1,9 @@
 import {
     AppInterceptor,
+    Interceptor,
     InterceptorConfig,
+    InterceptorRequest,
+    InterceptorResponse,
     NetworkInterceptor,
 } from './../interceptors'
 
@@ -43,7 +46,7 @@ export class PrimoConfiguration {
      *   Reversing the order will result in only generalInterceptor being invoked for all endpoints.
      * @returns An instance of the InterceptorBuilder with the specified pattern.
      */
-    paths(pattern: string) {
+    paths(...pattern: string[]) {
         return new InterceptorBuilder(
             this,
             this.appInterceptors,
@@ -67,7 +70,7 @@ class InterceptorBuilder {
             string,
             InterceptorConfig<NetworkInterceptor>
         >,
-        private pattern: string
+        private patterns: string[]
     ) {}
 
     private _methods: string[] = []
@@ -99,17 +102,7 @@ class InterceptorBuilder {
      * ````
      */
     addInterceptors(...interceptors: AppInterceptor[]) {
-        if (!this.appInterceptors.get(this.pattern))
-            this.appInterceptors.set(this.pattern, {
-                interceptors: [],
-                methods: [],
-            })
-
-        this.appInterceptors
-            .get(this.pattern)!
-            .interceptors.push(...interceptors)
-
-        this.appInterceptors.get(this.pattern)!.methods.push(...this._methods)
+        this.addInterceptorsToAllPattern(this.appInterceptors, interceptors)
 
         return this.primoConfiguration
     }
@@ -137,20 +130,43 @@ class InterceptorBuilder {
      * ````
      */
     addNetworkInterceptors(...interceptors: NetworkInterceptor[]) {
-        if (!this.networkInterceptors.get(this.pattern))
-            this.networkInterceptors.set(this.pattern, {
+        this.addInterceptorsToAllPattern(this.networkInterceptors, interceptors)
+
+        return this.primoConfiguration
+    }
+
+    private addInterceptorsToAllPattern(
+        interceptors: Map<
+            string,
+            InterceptorConfig<
+                Interceptor<InterceptorRequest, InterceptorResponse>
+            >
+        >,
+        newInterceptors: Interceptor<InterceptorRequest, InterceptorResponse>[]
+    ) {
+        this.patterns.forEach((pattern) => {
+            this.initializeArraysIfNull(pattern, interceptors)
+
+            interceptors.get(pattern)!.interceptors.push(...newInterceptors)
+            interceptors.get(pattern)!.methods.push(...this._methods)
+        })
+    }
+
+    private initializeArraysIfNull(
+        pattern: string,
+        interceptors: Map<
+            string,
+            InterceptorConfig<
+                Interceptor<InterceptorRequest, InterceptorResponse>
+            >
+        >
+    ) {
+        if (!interceptors.get(pattern)) {
+            interceptors.set(pattern, {
                 interceptors: [],
                 methods: [],
             })
-
-        this.networkInterceptors
-            .get(this.pattern)!
-            .interceptors.push(...interceptors)
-        this.networkInterceptors
-            .get(this.pattern)!
-            .methods.push(...this._methods)
-
-        return this.primoConfiguration
+        }
     }
 }
 
