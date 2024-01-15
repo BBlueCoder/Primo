@@ -1,3 +1,4 @@
+import { PrimoConfiguration } from './configuration/primo-configuration-builder'
 import { RequestOptions } from './custom-request'
 import {
     AppInterceptor,
@@ -88,6 +89,13 @@ export class Primo extends MainServer {
         }
     }
 
+    configure(): PrimoConfiguration {
+        return new PrimoConfiguration(
+            this.appInterceptors,
+            this.networkInterceptors
+        )
+    }
+
     /**
      * Defines patterns for interceptors and returns an instance of the InterceptorBuilder.
      *
@@ -118,25 +126,25 @@ export class Primo extends MainServer {
      *   Reversing the order will result in only generalInterceptor being invoked for all endpoints.
      * @returns An instance of the InterceptorBuilder with the specified pattern.
      */
-    paths(pattern: string) {
-        if (!this.appInterceptors.get(pattern))
-            this.appInterceptors.set(pattern, {
-                interceptors: [],
-                methods: [],
-            })
+    // paths(pattern: string) {
+    //     if (!this.appInterceptors.get(pattern))
+    //         this.appInterceptors.set(pattern, {
+    //             interceptors: [],
+    //             methods: [],
+    //         })
 
-        if (!this.networkInterceptors.get(pattern))
-            this.networkInterceptors.set(pattern, {
-                interceptors: [],
-                methods: [],
-            })
+    //     if (!this.networkInterceptors.get(pattern))
+    //         this.networkInterceptors.set(pattern, {
+    //             interceptors: [],
+    //             methods: [],
+    //         })
 
-        return new this.InterceptorBuilder(
-            this,
-            this.appInterceptors.get(pattern)!,
-            this.networkInterceptors.get(pattern)!
-        )
-    }
+    //     return new this.InterceptorBuilder(
+    //         this,
+    //         this.appInterceptors.get(pattern)!,
+    //         this.networkInterceptors.get(pattern)!
+    //     )
+    // }
 
     /**
      * Removes patterns with empty interceptor lists from both appInterceptors and networkInterceptors.

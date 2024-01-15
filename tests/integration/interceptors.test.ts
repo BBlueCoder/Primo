@@ -13,7 +13,7 @@ const PORT = 6002
 const API_URL = `http://localhost:${PORT}/`
 
 describe('interceptors integration with server', async () => {
-    let server = new Primo()
+    let server
 
     beforeEach(async () => {
         server = new Primo()
@@ -45,7 +45,10 @@ describe('interceptors integration with server', async () => {
             'intercept'
         )
 
-        server.paths('/path/**').addNetworkInterceptors(rateLimitInterceptor)
+        server
+            .configure()
+            .paths('/path/**')
+            .addNetworkInterceptors(rateLimitInterceptor)
 
         const response = await fetch(`${API_URL}path`)
 
@@ -66,7 +69,7 @@ describe('interceptors integration with server', async () => {
 
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
-        server.paths('/path/**').addInterceptors(authInterceptor)
+        server.configure().paths('/path/**').addInterceptors(authInterceptor)
 
         const response = await fetch(`${API_URL}path`)
 
@@ -90,7 +93,7 @@ describe('interceptors integration with server', async () => {
 
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
-        server.paths('/path/**').addInterceptors(authInterceptor)
+        server.configure().paths('/path/**').addInterceptors(authInterceptor)
 
         const response = await fetch(`${API_URL}path`)
 
@@ -126,6 +129,7 @@ describe('interceptors integration with server', async () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
         server
+            .configure()
             .paths('/path/**')
             .addNetworkInterceptors(rateLimitInterceptor)
             .paths('/path/**')
@@ -166,6 +170,7 @@ describe('interceptors integration with server', async () => {
 
         // for better practices don't add paths in this order
         server
+            .configure()
             .paths('/**')
             .addNetworkInterceptors(rateLimitInterceptor)
             .paths('/path')
@@ -205,6 +210,7 @@ describe('interceptors integration with server', async () => {
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
         server
+            .configure()
             .paths('/other')
             .addNetworkInterceptors(rateLimitInterceptor)
             .paths('/other')
@@ -238,7 +244,7 @@ describe('interceptors integration with server', async () => {
             res.status(200).serve(req.user)
         })
 
-        server.paths('/user').addInterceptors(authInterceptor)
+        server.configure().paths('/user').addInterceptors(authInterceptor)
 
         const response = await fetch(`${API_URL}user`)
 
@@ -259,7 +265,25 @@ describe('interceptors integration with server', async () => {
             },
         }
 
-        server.paths('/post').methods(['post']).addInterceptors(authInterceptor)
+        const rateLimitInterceptor: NetworkInterceptor = {
+            intercept: function (
+                req: IncomingMessage,
+                res: ServerResponse<IncomingMessage>,
+                next: () => void
+            ): void {
+                res.statusCode = 429
+                res.end()
+            },
+        }
+
+        server
+            .configure()
+            .paths('/post')
+            .methods(['post'])
+            .addInterceptors(authInterceptor)
+            .paths('/articles')
+            .methods(['post'])
+            .addNetworkInterceptors(rateLimitInterceptor)
 
         const mAuthInterceptor = mock.method(authInterceptor, 'intercept')
 
@@ -280,5 +304,30 @@ describe('interceptors integration with server', async () => {
 
         assert.strictEqual(responseOfPost.status, 401)
         assert.deepStrictEqual(mAuthInterceptor.mock.callCount(), 1)
+
+        const mRateLimitInterceptor = mock.method(
+            rateLimitInterceptor,
+            'intercept'
+        )
+
+        server.get('/articles', (req, res) => {
+            res.status(200).serve('')
+        })
+
+        server.post('/articles', (req, res) => {
+            res.status(200).serve('')
+        })
+
+        const responseOfGetNetowrk = await fetch(`${API_URL}articles`)
+
+        assert.strictEqual(responseOfGetNetowrk.status, 200)
+        assert.deepStrictEqual(mRateLimitInterceptor.mock.callCount(), 0)
+
+        const responseOfPostNetowrk = await fetch(`${API_URL}articles`, {
+            method: 'POST',
+        })
+
+        assert.strictEqual(responseOfPostNetowrk.status, 429)
+        assert.deepStrictEqual(mRateLimitInterceptor.mock.callCount(), 1)
     })
 })
